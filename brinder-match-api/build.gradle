@@ -29,8 +29,19 @@ repositories {
     }
 }
 
-bootJar {
-    archiveFileName='brinder-match-1.0.0.jar'
+bootBuildImage {
+    imageName = "brinder/${project.name}"
+}
+
+jib {
+    to {
+        image = "brinder/${project.name}"
+    }
+}
+jib {
+    to {
+        image = "brinder/${project.name}"
+    }
 }
 
 dependencies {

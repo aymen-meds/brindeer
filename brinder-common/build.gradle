@@ -7,7 +7,7 @@ plugins {
 
 group = 'org.gso.brinder'
 version = '1.0.0-SNAPSHOT'
-sourceCompatibility = '17'
+
 
 repositories {
     mavenCentral()

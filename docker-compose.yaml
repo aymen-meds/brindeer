@@ -14,7 +14,7 @@
         - "27017:27017"
 
     profile:
-      image: ./brinder-profile-api
+      image: brinder/brinder-profile-api
       ports:
         - 9080:8080
       environment:
@@ -22,7 +22,7 @@
       depends_on:
         - mongo
     match:
-      image: ./brinder-match-api
+      image: brinder/brinder-match-api
       ports:
         - 9090:8080
       environment:

@@ -10,6 +10,7 @@ import org.springframework.data.geo.Distance;
 import org.springframework.data.geo.Metrics;
 import org.springframework.data.geo.Point;
 import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.geo.GeoJsonPoint;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Service;
@@ -37,9 +38,18 @@ public class MatchedUserService {
                 .orElseThrow(() -> new IllegalStateException("User Match Profile not found with id: " + idMatch));
     }
 
-    public MatchedUser createLocationProfile(MatchedUser userMatchProfile) {
-        log.info("Saving new User Match Profile with id: {}", userMatchProfile.getIdMatchedUser());
-        return matchingRepository.save(userMatchProfile);
+    public MatchedUser createLocationProfile(String userId, String firstName, String lastName, String address) {
+        GeoJsonPoint location = addressToCoordinates(address); // Convert address to GeoJsonPoint
+        if (location == null) {
+            throw new IllegalStateException("Could not convert address to coordinates");
+        }
+        MatchedUser userMatchProfile = MatchedUser.builder()
+                .idMatchedUser(userId)
+                .firstName(firstName)
+                .lastName(lastName)
+                .location(location) // Use the converted location
+                .build();
+        return matchingRepository.save(userMatchProfile); // Save the new user profile
     }
 
     public List<MatchedUser> findLocationsProfile(Pageable pageable) {
@@ -49,21 +59,19 @@ public class MatchedUserService {
 
     public List<MatchedUser> findByDistance(String userId) {
         MatchedUser matchedUser = getById(userId);
-        GeoCoordinates geo = matchedUser.getGeoCoordinates();
+        GeoJsonPoint location = matchedUser.getLocation();
         Distance distance = new Distance(0.1, Metrics.KILOMETERS); // 100 meters
-        Point point = new Point(geo.getLongitude(), geo.getLatitude());
-        Circle area = new Circle(point, distance);
-        Query query = new Query(Criteria.where("geoLocation").withinSphere(area));
+
+        Query query = new Query(Criteria.where("location").nearSphere(location).maxDistance(distance.getNormalizedValue()));
         return mongoTemplate.find(query, MatchedUser.class);
     }
-
     public MatchedUser updateProfileMatch(MatchedUser userMatchProfile) {
         log.info("Updating User Match Profile with id: {}", userMatchProfile.getIdMatchedUser());
         return matchingRepository.save(userMatchProfile);
     }
 
     // Additional methods for Google Maps integration
-    public GeoCoordinates addressToCoordinates(String address) {
+    public GeoJsonPoint addressToCoordinates(String address) {
         try {
             String url = "https://maps.googleapis.com/maps/api/geocode/json?key=" + googleMapsApiKey +
                     "&address=" + java.net.URLEncoder.encode(address, StandardCharsets.UTF_8).replace("+", "%20");
@@ -76,18 +84,17 @@ public class MatchedUserService {
             double latitude = (Double) location.get("lat");
             double longitude = (Double) location.get("lng");
 
-            return new GeoCoordinates(latitude, longitude);
+            return new GeoJsonPoint(longitude, latitude); // Note: GeoJsonPoint expects longitude first
         } catch (Exception e) {
             log.error("Error when requesting Google Maps: ", e);
             return null;
         }
     }
-
     public MatchedUser updateLocationProfile(String idMatch, String address) {
-        GeoCoordinates coordinates = addressToCoordinates(address);
+        GeoJsonPoint coordinates = addressToCoordinates(address);
         if (coordinates != null) {
             MatchedUser matchedUser = getById(idMatch);
-            matchedUser.setGeoCoordinates(coordinates);
+            matchedUser.setLocation(coordinates); // Update the location with GeoJsonPoint
             return matchingRepository.save(matchedUser);
         }
         throw new IllegalStateException("Could not update location for profile with id: " + idMatch);

@@ -8,7 +8,10 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 public class GeoCoordinates {
+    private String type = "Point";
+    private double[] coordinates; // longitude, latitude
 
-    private double latitude;
-    private double longitude;
+    public GeoCoordinates(double latitude, double longitude) {
+        this.coordinates = new double[]{longitude, latitude};
+    }
 }

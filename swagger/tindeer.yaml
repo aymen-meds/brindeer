@@ -1,7 +1,7 @@
 openapi: 3.0.0
 info:
   title: Tindeer API
-  description: Notre super API pour notre application mobile de rencontre de Rennes
+  description: Api de Rencontre Maghrébin
   version: 1.0.0
 servers:
   - url: http://localhost:9080/api/v1
@@ -21,15 +21,6 @@ components:
             profile: access profile
             email: access email
   schemas:
-    GeoCoordinates:
-      type: object
-      properties:
-        latitude:
-          type: number
-          format: double
-        longitude:
-          type: number
-          format: double
     MatchedUser:
       type: object
       properties:
@@ -39,35 +30,34 @@ components:
           type: string
         lastName:
           type: string
-        geoCoordinates:
-          $ref: '#/components/schemas/GeoCoordinates'
+        location: # Assuming you have a schema for GeoJsonPoint, adjust accordingly
+          type: object
+          properties:
+            type:
+              type: string
+              enum: [Point]
+            coordinates:
+              type: array
+              items:
+                type: number
+              minItems: 2
+              maxItems: 2
+              example: [-73.856077, 40.848447]
 security:
   - oAuthSample:
       - profile
       - email
 paths:
-  /profiles/current:
-    get:
-      summary: Retourne le profil courant de l'utilisateur
-      security:
-        - oAuthSample:
-            - profile
-      responses:
-        '200':
-          description: Profil d'utilisateur courant retourné avec succès
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/MatchedUser'
   /match/create:
     post:
       summary: Crée un nouveau profil d'utilisateur avec géolocalisation
       requestBody:
         required: true
         content:
-          application/json:
+          text/plain:
             schema:
-              $ref: '#/components/schemas/GeoCoordinates'
+              type: string
+              description: Address in plain text to be converted to geo-coordinates.
       responses:
         '201':
           description: Profil d'utilisateur créé avec succès
@@ -108,7 +98,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/GeoCoordinates'
+              $ref: '#/components/schemas/MatchedUser'
       responses:
         '200':
           description: Profil d'utilisateur mis à jour avec succès

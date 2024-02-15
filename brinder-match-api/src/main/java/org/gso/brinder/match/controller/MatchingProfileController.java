@@ -1,7 +1,5 @@
 package org.gso.brinder.match.controller;
 
-
-import org.gso.brinder.match.model.GeoCoordinates;
 import org.gso.brinder.match.model.MatchedUser;
 import org.gso.brinder.match.service.MatchedUserService;
 import org.springframework.data.domain.Pageable;
@@ -24,22 +22,15 @@ public class MatchingProfileController {
         this.matchedUserService = matchedUserService;
     }
 
-// In MatchingProfileController
-
+    // Adjusted to use address in request body for creating a location profile
     @PostMapping("/create")
-    public ResponseEntity<MatchedUser> createLocationProfile(@RequestBody GeoCoordinates geoCoordinates, @AuthenticationPrincipal JwtAuthenticationToken principal) {
+    public ResponseEntity<MatchedUser> createLocationProfile(@RequestBody String address, @AuthenticationPrincipal JwtAuthenticationToken principal) {
         String userId = principal.getToken().getClaimAsString("sub");
         String firstName = principal.getToken().getClaimAsString("given_name");
         String lastName = principal.getToken().getClaimAsString("family_name");
 
-        MatchedUser userMatchProfile = MatchedUser.builder()
-                .idMatchedUser(userId)
-                .firstName(firstName)
-                .lastName(lastName)
-                .geoCoordinates(geoCoordinates)
-                .build();
-
-        MatchedUser savedProfile = matchedUserService.createLocationProfile(userMatchProfile);
+        // Convert address to GeoJsonPoint within the service method
+        MatchedUser savedProfile = matchedUserService.createLocationProfile(userId, firstName, lastName, address);
         URI location = ServletUriComponentsBuilder.fromCurrentRequest().path("/{id}")
                 .buildAndExpand(savedProfile.getIdMatchedUser()).toUri();
         return ResponseEntity.created(location).body(savedProfile);
